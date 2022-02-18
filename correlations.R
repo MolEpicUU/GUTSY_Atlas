@@ -1,5 +1,6 @@
 # set options and load libraries
 
+set.seed(1)
 cores <- 16
 
 library(rio)
@@ -27,7 +28,7 @@ cor.fun <- function(y, x, z) {
       
     }, warning = function(w) {
       
-      # run model again if warning
+      # if warning, run model again to capture warning
       
       data$ycol <- ycol[match(rownames(data), rownames(y))]
       data <- data[complete.cases(data), ]
@@ -110,32 +111,7 @@ main.fun <- function() {
 
 # import data
 
-load("data/data.rda")
-
-# test data
-
-# tax <- as.data.frame(matrix(runif(1000 * 10), ncol = 10))
-# colnames(tax) <- paste0("mgs", 1:ncol(tax))
-# rownames(tax) <- paste0("sample", 1:nrow(tax))
-# 
-# met <- as.data.frame(matrix(rnorm(1000 * 10, 5, 2), ncol = 10))
-# colnames(met) <- paste0("metabolite", 1:ncol(met))
-# rownames(met) <- paste0("sample", 1:nrow(met))
-# 
-# pheno <- data.frame(age = rnorm(1000, 55, 4), 
-#                     sex = sample(c("female", "male"), 1000, replace = T), 
-#                     ethnicity = sample(c("country1", "country2", "country3"), 1000, replace = T),
-#                     site = sample(c("site1", "site2"), 1000, replace = T),
-#                     shannon = abs(rnorm(1000, 3, 2)),
-#                     plate = sample(c("plate1", "plate2", "plate3"), 1000, replace = T)
-#                     )
-# rownames(pheno) <- paste0("sample", 1:nrow(tax))
-# 
-# met1 <- met[, 1:8]
-# met2 <- met[, 9:10]
-# met2[which(pheno$site == "site1"), ] <- NA
-# met <- cbind(met1, met2)
-# rm(met1, met2)
+load("data.rda")
 
 # add alpha diversity
 
@@ -160,6 +136,6 @@ diversity <- diversity[order(diversity$p.value, -abs(diversity$estimate)), ]
 # export data
 
 export(res[, c("mgs", "metabolite", "estimate", "statistic", "p.value", "q.value", "n", "message")], 
-       "results/correlations.tsv")
+       "correlations.tsv")
 export(diversity[, c("metabolite", "estimate", "statistic", "p.value", "q.value", "n", "message")], 
-       "results/diversity.tsv")
+       "diversity.tsv")
