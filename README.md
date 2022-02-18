@@ -6,11 +6,6 @@ Scripts:
 * variance_explained.R is the R-script used to calculate how much of the variance of gut microbial species is explained by a combination of metabolites.
 
 Software versions tested:
-R 4.1.1
-rio 0.5.27
-BiocParallel 1.26.2
-ppcor 1.1
-glmnet 4.1-3
-fgsea 1.19.2
+R 4.1.1, rio 0.5.27, BiocParallel 1.26.2, ppcor 1.1, glmnet 4.1-3, fgsea 1.19.2, 
 
 NOTE: the scripts contain a section called "test data" that can be uncommented to test the scripts without access to the data.
