@@ -28,12 +28,9 @@
   - Run script variance_explained.R
 * Expected output: 
   - Files: correlations.tsv, diversity.tsv, gsea_module.tsv, gsea_genus.tsv, gsea_subclass.tsv and variance_explained.tsv
-  - In correlations.tsv mgs 1 to 30 should be associated with metabolite 1 to 30, respectively
-  - In gsea_module.tsv and gsea_genus.tsv the strongest enriched feature for metabolite 1 to 30 should often contain mgs 1 to 30 as leading edge, respectively
-  - In gsea_subclass.tsv the strongest enriched feature for mgs 1 to 30 should often contain metabolite 1 to 30 as leading edge, respectively
-  - In variance_explained.tsv metabolite 1 to 30 should have mgs 1 to 30 as most important contributor to the variance explained, respectively
+  - In correlations.tsv the strongest associations should be for metabolite1
+  - In gsea_module.tsv and gsea_genus.tsv the strongest enrichment should be for metabolite1
+  - In variance_explained.tsv the highest variance explained should be for metabolite1
 * Run time: <5 minutes
 
-Software versions tested: R 4.1.1, rio 0.5.27, BiocParallel 1.26.2, ppcor 1.1, glmnet 4.1-3 and fgsea 1.19.2
-
-
+Software versions tested: R 4.1.2, rio 0.5.29, BiocParallel 1.28.3, ppcor 1.1, glmnet 4.1-3 and fgsea 1.20.0

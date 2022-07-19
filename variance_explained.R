@@ -1,11 +1,12 @@
-# set options and load libraries
-
-set.seed(1)
-cores <- 8
+# load libraries and set options
 
 library(rio)
 library(BiocParallel)
 library(glmnet)
+library(caret)
+
+cores <- 16
+set.seed(1)
 
 # variance explained function
 
@@ -15,53 +16,86 @@ var.fun <- function() {
     
     # create data for complete cases
     
-    complete <- complete.cases(cbind(met[, x], tax))
-    tax <- tax[complete, ]
-    met <- met[complete, x]
+    data <- data.frame(met = met[, x], tax)
+    complete <- complete.cases(data)
+    data <- data[complete, ]
+    met <- data$met
+    tax <- data[, which(!colnames(data) == "met")]
     
     tryCatch({
       
-      # fit model
+      # create 10 folds
       
-      fit <- cv.glmnet(x = as.matrix(tax), y = met, alpha = 1)
+      folds <- createFolds(met, k = 10)
       
-      # calculate r.squared from cross validated errors
+      nested.cv <- lapply(folds, function(fold) {
+        
+        # create test data
+        
+        met_test <- met[fold]
+        tax_test <- tax[fold, ]
+        
+        # create cross-validation data
+        
+        met_cv <- met[-fold]
+        tax_cv <- tax[-fold, ]
+        
+        # create 10 cross-validation folds
+        
+        cv_fold <- createFolds(met_cv, k = 10)[[1]]
+        
+        # create validation data
+        
+        met_validate <- met[cv_fold]
+        tax_validate <- tax[cv_fold, ]
+        
+        # create training data
+        
+        met_train <- met[-cv_fold]
+        tax_train <- tax[-cv_fold, ]
+        
+        # fit ridge regression model
+        
+        fit <- glmnet(x = as.matrix(tax_train), y = met_train, alpha = 0)
+        
+        # determine model with minimum lambda
+        
+        pred <- predict(fit, newx = as.matrix(tax_validate), s = fit$lambda)
+        mse <- colMeans((pred - met_validate)^2) / var(met_validate)
+        lambda <- fit$lambda[which.min(mse)]
+        mse.train <- min(mse)
+        
+        # test model with minimum lambda on test fold
+        
+        pred <- as.numeric(predict(fit, newx = as.matrix(tax_test), s = lambda))
+        mse.test <- mean((pred - met_test)^2) / var(met_test)
+        r.squared <- cor(pred, met_test)^2
+        data.frame(r.squared = r.squared, lambda = lambda, mse.train = mse.train, mse.test = mse.test)
+        
+      })
+      nested.cv <- do.call(rbind, nested.cv)
       
-      r.squared <- 1 - fit$cvm[which(fit$lambda == fit$lambda.min)] / var(met)
-      
-      # calculate normalized regression coefficients
-      
-      coef <- coef(fit, s = "lambda.min")
-      sds <- apply(as.matrix(tax), 2, sd)
-      std_coef <- coef[-1, 1] * sds
-      
-      # clean
-      
-      res <- data.frame(name = colnames(tax), coefficient = std_coef)
-      res <- res[which(res$coefficient != 0), ]
-      res <- res[order(abs(res$coefficient), decreasing = T), ]
-      data.frame(metabolite = x, r.squared = r.squared, n = nrow(tax), mgs = paste(res$name, collapse = ";"), 
-                 importance = paste(res$coefficient, collapse = ";"), error = NA)
+      data.frame(metabolite = x, r.squared = mean(nested.cv$r.squared), mse.train = mean(nested.cv$mse.train), mse.test = mean(nested.cv$mse.test), n = nrow(tax), error = NA)
       
     }, error = function(e) {
       
       # return empty result if error
       
-      data.frame(metabolite = NA, r.squared = NA, n = NA, mgs = NA, importance = NA, error = paste("Error:", e$message))
+      data.frame(metabolite = NA, r.squared = NA, mse.train = NA, mse.test = NA, n = NA, error = paste("Error:", e$message))
       
     })
-
+    
   }, BPPARAM = MulticoreParam(cores))
   
   do.call(rbind, res)
-
+  
 }
 
 # import data
 
 load("data.rda")
 
-# run lasso
+# run nested 10-fold cross-validated ridge regression
 
 variance.explained <- var.fun()
 
@@ -71,5 +105,5 @@ variance.explained <- variance.explained[order(-abs(variance.explained$r.squared
 
 # export data
 
-export(variance.explained[, c("metabolite", "r.squared", "n", "mgs", "importance")],
+export(variance.explained[, c("metabolite", "r.squared", "mse.train", "mse.test", "n")],
        "variance_explained.tsv")

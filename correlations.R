@@ -1,38 +1,40 @@
-# set options and load libraries
-
-set.seed(1)
-cores <- 16
+# load libraries and set options
 
 library(rio)
 library(BiocParallel)
 library(ppcor)
 
+cores <- 16
+
 # correlation function
 
 cor.fun <- function(y, x, z) {
   
-  # create model matrix
-  
-  data <- data.frame(x, z)
-  data <- as.data.frame(model.matrix(~ ., data))
-  
-  fit <- apply(y, 2, function(ycol) {
+  fit <- apply(y, 2, function(y) {
     
     tryCatch({
       
-      # run model on complete cases
+      # create model matrix
       
-      data$ycol <- ycol[match(rownames(data), rownames(y))]
+      data <- data.frame(y, x, z)
       data <- data[complete.cases(data), ]
-      data.frame(pcor.test(data$ycol, data$x, data[, which(!colnames(data) %in% c("ycol", "x"))]), message = NA)
+      data <- data[, apply(data, 2, function(x) length(unique(x)) > 1)]
+      data <- as.data.frame(model.matrix(~ ., data))[, -1]
+      
+      # run model
+      
+      data.frame(pcor.test(data$y, data$x, data[, which(!colnames(data) %in% c("y", "x"))], method = "spearman"), 
+                 message = NA)
       
     }, warning = function(w) {
       
       # if warning, run model again to capture warning
-      
-      data$ycol <- ycol[match(rownames(data), rownames(y))]
+
+      data <- data.frame(y, x, z)
       data <- data[complete.cases(data), ]
-      data.frame(pcor.test(data$ycol, data$x, data[, which(!colnames(data) %in% c("ycol", "x"))]), 
+      data <- data[, apply(data, 2, function(x) length(unique(x)) > 1)]
+      data <- as.data.frame(model.matrix(~ ., data))[, -1]
+      data.frame(pcor.test(data$y, data$x, data[, which(!colnames(data) %in% c("y", "x"))], method = "spearman"), 
                  message = paste("Warning:", w$message))
       
     }, error = function(e) {
@@ -55,56 +57,16 @@ cor.fun <- function(y, x, z) {
 
 main.fun <- function() {
   
-  # rank metabolites and metagenomic species
-  
-  met <- apply(met, 2, function(x) rank(x, "keep"))
-  tax <- apply(tax, 2, function(x) rank(x, "keep"))
-  
-  # handle metabolites available only in 1 site
-  
-  met1 <- met[, apply(met, 2, function(x) any(tapply(x, pheno$site, function(y) sum(is.na(y)) == length(y))))]
-  met2 <- met[, which(!colnames(met) %in% colnames(met1))]
-  
-  # calculate correlations for metabolites only available in 1 site
+  # calculate correlations
   
   res <- bplapply(colnames(tax), function(x) {
     
-    if (x == "shannon") {
-      
-      coef <- cor.fun(met1, tax[, x], pheno[, c("age", "sex", "ethnicity", "plate")])
-      
-    } else {
-      
-      coef <- cor.fun(met1, tax[, x], pheno[, c("age", "sex", "ethnicity", "shannon", "plate")])
-      
-    }
-    
-    data.frame(mgs = x, metabolite = colnames(met1), coef)
+    coef <- cor.fun(met, tax[, x], pheno[, c("age", "sex", "ethnicity", "batch")])
+    data.frame(mgs = x, metabolite = colnames(met), coef)
     
   }, BPPARAM = MulticoreParam(cores))
- 
+  
   res <- do.call(rbind, res)
-  
-  # calculate correlations for metabolites only available in 1 site
-  
-  res2 <- bplapply(colnames(tax), function(x) {
-    
-    if (x == "shannon") {
-      
-      coef <- cor.fun(met2, tax[, x], pheno[, c("age", "sex", "ethnicity", "site", "plate")])
-      
-    } else {
-      
-      coef <- cor.fun(met2, tax[, x], pheno[, c("age", "sex", "ethnicity", "site", "shannon", "plate")])
-      
-    }
-    
-    data.frame(mgs = x, metabolite = colnames(met2), coef)
-    
-  }, BPPARAM = MulticoreParam(cores))
-  
-  res2 <- do.call(rbind, res2)
-  res <- rbind(res, res2)
   res[, c("mgs", "metabolite", "estimate", "statistic", "p.value", "n", "message")]
   
 }

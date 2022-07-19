@@ -1,11 +1,11 @@
-# set options and load libraries
-
-set.seed(1)
-cores <- 16
+# load libraries and set options
 
 library(rio)
 library(BiocParallel)
 library(fgsea)
+
+cores <- 16
+set.seed(1)
 
 # enrichment function for gmm modules
 
@@ -16,12 +16,12 @@ module.fun <- function(data) {
     # rank based on p-value
     
     data <- data[which(data$metabolite == metabolite), ]
-    stats <- rank(-data$p.value, na = "keep")
+    stats <- rank(abs(data$statistic), na = "keep")
     names(stats) <- data$mgs
     
     # run gsea
     
-    res <- as.data.frame(fgsea(module, stats, scoreType = "pos", eps = 0))
+    res <- as.data.frame(fgsea(modules, stats, scoreType = "pos", eps = 0, minSize = 5))
     data.frame(metabolite = metabolite, module = res$pathway, estimate = res$NES, p.value = res$pval, 
                size = res$size, leading = sapply(res$leadingEdge, function(x) paste(x, collapse = ";")))
     
@@ -40,12 +40,12 @@ genus.fun <- function(data) {
     # rank based on p-value
     
     data <- data[which(data$metabolite == metabolite), ]
-    stats <- rank(-data$p.value, na = "keep")
+    stats <- rank(abs(data$statistic), na = "keep")
     names(stats) <- data$mgs
     
     # run gsea
     
-    res <- as.data.frame(fgsea(genus, stats, scoreType = "pos", eps = 0))
+    res <- as.data.frame(fgsea(genera, stats, scoreType = "pos", eps = 0, minSize = 5))
     data.frame(metabolite = metabolite, genus = res$pathway, estimate = res$NES, p.value = res$pval, 
                size = res$size, leading = sapply(res$leadingEdge, function(x) paste(x, collapse = ";")))
     
@@ -64,12 +64,12 @@ subclass.fun <- function(data) {
     # rank based on p-value
     
     data <- data[which(data$mgs == mgs), ]
-    stats <- rank(-data$p.value, na = "keep")
+    stats <- rank(abs(data$statistic), na = "keep")
     names(stats) <- data$metabolite
     
     # run gsea
     
-    res <- as.data.frame(fgsea(subclass, stats, scoreType = "pos", eps = 0))
+    res <- as.data.frame(fgsea(subclasses, stats, scoreType = "pos", eps = 0, minSize = 5))
     data.frame(mgs = mgs, subclass = res$pathway, estimate = res$NES, p.value = res$pval, 
                size = res$size, leading = sapply(res$leadingEdge, function(x) paste(x, collapse = ";")))
     
@@ -127,9 +127,9 @@ subclass.res <- subclass.res[order(subclass.res$p.value, -abs(subclass.res$estim
 
 # export data
 
-export(module.res[, c("metabolite", "module", "estimate", "p.value", "q.value", "leading", "size")], 
+export(module.res[, c("metabolite", "module", "estimate", "p.value", "q.value", "direction", "size", "leading")], 
        "gsea_module.tsv")
-export(genus.res[, c("metabolite", "genus", "estimate", "p.value", "q.value", "leading", "size")], 
+export(genus.res[, c("metabolite", "genus", "estimate", "p.value", "q.value", "direction", "size", "leading")], 
        "gsea_genus.tsv")
-export(subclass.res[, c("mgs", "subclass", "estimate", "p.value", "q.value", "leading", "size")], 
+export(subclass.res[, c("mgs", "subclass", "estimate", "p.value", "q.value", "direction", "size", "leading")], 
        "gsea_subclass.tsv")
