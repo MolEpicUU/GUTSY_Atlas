@@ -5,6 +5,7 @@
 * correlations.R is the R-script used to calculate partial Spearman correlations between gut microbial species and plasma metabolites
 * gsea.R is the R-script used to generate the enrichment test results for gut metabolic modules, taxonomic genera and metabolite classes
 * variance_explained.R is the R-script used to calculate how much of the variance of gut microbial species is explained by a combination of metabolites
+* create_test_data.R is the R-script used to generate the test data
 * data.rda is simulated test data, the scripts work both on the real data as well as the test data
 
 # Installation guide
