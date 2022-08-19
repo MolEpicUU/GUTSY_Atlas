@@ -61,16 +61,16 @@ var.fun <- function() {
         # determine model with minimum lambda
         
         pred <- predict(fit, newx = as.matrix(tax_validate), s = fit$lambda)
-        mse <- colMeans((pred - met_validate)^2) / var(met_validate)
+        mse <- colMeans((pred - met_validate)^2)
         lambda <- fit$lambda[which.min(mse)]
         mse.train <- min(mse)
-        
+
         # test model with minimum lambda on test fold
         
         pred <- as.numeric(predict(fit, newx = as.matrix(tax_test), s = lambda))
-        mse.test <- mean((pred - met_test)^2) / var(met_test)
         r.squared <- cor(pred, met_test)^2
-        data.frame(r.squared = r.squared, lambda = lambda, mse.train = mse.train, mse.test = mse.test)
+        mse.test <- mean((pred - met_test)^2)
+        data.frame(r.squared = r.squared, mse.train = mse.train, mse.test = mse.test)
         
       })
       nested.cv <- do.call(rbind, nested.cv)
