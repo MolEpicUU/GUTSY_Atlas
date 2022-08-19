@@ -7,7 +7,7 @@
 * variance_explained.R is the R-script used to calculate how much of the variance of gut microbial species is explained by a combination of metabolites
 * create_test_data.R is the R-script used to generate the test data
 * data.rda is simulated test data, the scripts work both on the real data as well as the test data
-* Source_Data.zip is the data used to generate the figures
+* Source_Data.zip is the data used to generate the manuscript figures
 
 # Installation guide
 
