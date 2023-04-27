@@ -46,13 +46,13 @@ var.fun <- function() {
         
         # create validation data
         
-        met_validate <- met[cv_fold]
-        tax_validate <- tax[cv_fold, ]
+        met_validate <- met_cv[cv_fold]
+        tax_validate <- tax_cv[cv_fold, ]
         
         # create training data
         
-        met_train <- met[-cv_fold]
-        tax_train <- tax[-cv_fold, ]
+        met_train <- met_cv[-cv_fold]
+        tax_train <- tax_cv[-cv_fold, ]
         
         # fit ridge regression model
         
